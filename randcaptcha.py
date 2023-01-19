@@ -6,6 +6,13 @@
     return two strings (text random, path of image).
 
 
+see help(module) for use
+
+changes on versions:
+- from 0.1 to 0.2
+    Added kw args, rotate arg change the angle of rotates
+    Added retro-compatibility with python 2.7 (compatibility with py3 and py2)
+
 ---------------------------------------------------------------------------------
 
 MIT License
@@ -38,20 +45,35 @@ from random import randint, choice;
 
 
 
-version = 0.1;
+version = 0.2;
 
 _textRandom = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-_textRandom = _textRandom.upper();
 _textRandom += "0123456789";
 
 
 def _invertColor(rgb):
     return tuple([255-color for color in rgb]);
 
+def _getTextLength(font_pillow, text):
+    #calculate the width of char or text
+    if hasattr(font_pillow, "getlength"):
+        #python3x
+        return int(font_pillow.getlength(text));
+    else:
+        #python2x (will be deprecated method on python3)
+        return int(font_pillow.getsize(text)[0]);
+
+def _getRandomContrastColor(background):
+    #select a random color with a contrast:
+    color = background;
+    while abs(sum(background) - sum(color)) < 300:
+        color = tuple([randint(0, 255) for i in range(3)]);
+    return color;
 
 
+_validOptions = ("rotate",);
 def CreateImageCaptcha(fontnames, fontsize, filename_out=None,
-                        length=5, valid=_textRandom, background=(200, 200, 200), addgarbage=True):
+                        length=5, valid=_textRandom, background=(200, 200, 200), addgarbage=True, **kw):
 
     """
     Generate a random image for captcha and save the image on a file.
@@ -90,7 +112,31 @@ def CreateImageCaptcha(fontnames, fontsize, filename_out=None,
     addgarbage: use a True or False boolean, this flag controls additional drawing of line shapes,
         default: True
 
+    **kw extras:
+        rotate: the range of random rotations of a char,
+                can be a pair of angles from -360 to 360 each.
+                Can set this param to None value (no rotations, simple)
+        default: (-60, 60)
+
     """
+
+    for opt in kw:
+        if not opt in _validOptions:
+            raise Exception("option %s not in (%s)" % (opt, str(_validOptions)));
+
+    
+    rotate = kw.get("rotate", (-60, 60));
+    try:
+        #need validate the rotate param
+        if rotate != None:
+            minAngle, maxAngle = rotate;
+            assert minAngle >= -360 and minAngle <= 360;
+            assert maxAngle >= -360 and maxAngle <= 360;
+        
+    except:
+        raise Exception(
+        """param -rotate can be a pair of angles from -360 to 360 each,
+                  example: (-100, 100) or (10, 60) or None (do not rotate, no angle).""");
 
     assert length > 0;
 
@@ -116,32 +162,44 @@ def CreateImageCaptcha(fontnames, fontsize, filename_out=None,
     heightFont = sum(font.getmetrics());
 
     #drawing images of chars:
-    #draw = ImageDraw.Draw(image);
-    rotatedImagesChar = [];
-    for char in text:
-        widthChar = int(font.getlength(char));
 
-        #select a random color with a contrast:
-        color = background;
-        while abs(sum(background) - sum(color)) < 300:
-            color = tuple([randint(0, 255) for i in range(3)]);
-        
-        #new image char rotated:
-        imgChar = Image.new("RGB", (widthChar, heightFont), background);
-        ImageDraw.Draw(imgChar).text((0, 0), char, color, font=font);
-        imgChar = imgChar.rotate(randint(-60, 60), expand=True, fillcolor=background);
-        
-        rotatedImagesChar.append(imgChar)
+    if rotate != None:
+        rotatedImagesChar = [];
+        for char in text:
+            #calculate the width of char:
+            widthChar = _getTextLength(font, char);
             
-    #create image main container:
-    tatalWidth = pad + sum([img.width+pad for img in rotatedImagesChar]);
-    lastx = pad;
-    imgCaptcha = Image.new("RGB", (tatalWidth, heightFont+pad*2), background);
+            #select a random color with a contrast:
+            color = _getRandomContrastColor(background);
 
-    #add images into container:
-    for imgChar in rotatedImagesChar:
-        imgCaptcha.paste(imgChar, (lastx, pad));
-        lastx += imgChar.width+pad;
+            #new image char rotated:
+            imgChar = Image.new("RGB", (widthChar, heightFont), background);
+            ImageDraw.Draw(imgChar).text((0, 0), char, color, font=font);
+            imgChar = imgChar.rotate(randint(minAngle, maxAngle),
+                                     expand=True, fillcolor=background);
+                
+            rotatedImagesChar.append(imgChar)
+        
+        tatalWidth = pad + sum([img.width+pad for img in rotatedImagesChar]);
+
+        #create image main container:
+        imgCaptcha = Image.new("RGB", (tatalWidth, heightFont+pad*2), background);
+            
+        lastx = pad;
+        #add images into container:
+        for imgChar in rotatedImagesChar:
+            imgCaptcha.paste(imgChar, (lastx, pad));
+            lastx += imgChar.width+pad;
+    else:
+        #no-rotated chars:
+        tatalWidth = _getTextLength(font, text) + (pad*(len(text)+1));
+        imgCaptcha = Image.new("RGB", (tatalWidth, heightFont+pad*2), background);
+        draw = ImageDraw.Draw(imgCaptcha);
+        lastx = pad;
+        for char in text:
+            color = _getRandomContrastColor(background);
+            draw.text((lastx, pad), char, color, font=font);
+            lastx += _getTextLength(font, char) + pad;
 
     #add garbage ? :
     if addgarbage:
@@ -173,10 +231,21 @@ def CreateImageCaptcha(fontnames, fontsize, filename_out=None,
 
 if __name__ == "__main__":
 
-    text, fname = CreateImageCaptcha(["impact", "arial"], 25, filename_out="micaptcha.jpg", background=(20, 20, 20));
+    from time import time as timer;
+
+    t1 = timer();
+    text, fname = CreateImageCaptcha(["impact", "arial"], 25,
+                    filename_out="micaptcha.jpg", background=(20, 20, 20));
+
+    t1 = timer()-t1;
 
     print(text, fname);
+    print("%f seconds transcurred" % t1);
 
     #windows:
     from os import startfile;
-    startfile(fname)
+    startfile(fname);
+
+    input("Pause - press enter to exit...");
+
+

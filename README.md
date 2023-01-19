@@ -1,5 +1,5 @@
 # randcaptcha
-Genera una imagen de una captcha random | generate a random captcha image with Python
+Genera una imagen de una captcha random | generate a random captcha image with Python2 or Python3
 
 
 ## Dependencies:
@@ -34,3 +34,9 @@ CreateImageCaptcha(..) return text content on captcha and filename of captcha.
 
 
 
+## Last Changes:
+---------------
+
+## version 0.2
+
+Added params **kw, can use new param "rotate" for specify random angle of rotation. Module compatibility with Py2 and Py3
