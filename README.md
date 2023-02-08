@@ -2,6 +2,11 @@
 Genera una imagen de una captcha random | generate a random captcha image with Python2 or Python3
 
 
+## How to Install:
+```
+pip install randcaptcha
+```
+
 ## Dependencies:
 ```
 pip install Pillow
