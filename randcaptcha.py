@@ -38,6 +38,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+#https://github.com/LeonardoReichert/randcaptcha
 
 from PIL import Image, ImageFont, ImageDraw; #modules
 from tempfile import TemporaryFile;
@@ -46,6 +47,7 @@ from random import randint, choice;
 
 
 version = 0.2;
+
 
 _textRandom = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 _textRandom += "0123456789";
@@ -231,21 +233,47 @@ def CreateImageCaptcha(fontnames, fontsize, filename_out=None,
 
 if __name__ == "__main__":
 
+    ###############################################################################
+    # A test (Generated 100 random captchas):
+    #  Result:  0.019798 seconds transcurred for earch captcha, total time: 0.990 seconds
+    # used Intel Celeron N4000 1.10GHZx2, windows 11 x64, SSD Disk
+    ###############################################################################
+
     from time import time as timer;
 
-    t1 = timer();
-    text, fname = CreateImageCaptcha(["impact", "arial"], 25,
-                    filename_out="micaptcha.jpg", background=(20, 20, 20));
+    print(" - Random captcha tester - ");
 
-    t1 = timer()-t1;
+    print("""Options:
+    1 - Generate only one captcha for this test and showme the image.
+    2 - Generate 100 captcha's and count the time for each cases.""");
 
-    print(text, fname);
-    print("%f seconds transcurred" % t1);
+    opt = input(" > ");
 
-    #windows:
-    from os import startfile;
-    startfile(fname);
+    if opt in ("1", "2"):
 
-    input("Pause - press enter to exit...");
+        if opt == "1":
+            text, fname = CreateImageCaptcha(["impact", "arial"], 25, length=4, rotate=(-30,30),
+                            filename_out="micaptcha_test.jpg", background=(100, 100, 100));
 
+            print(text, fname);
 
+            #windows:
+            from os import startfile;
+            startfile(fname);
+
+            input("Pause - press enter to exit...");
+
+        elif opt == "2":
+            timeCount = 0;
+            for i in range(100):
+                print("Generating captcha %d/100" % (i+1));
+                t1 = timer();
+                text, fname = CreateImageCaptcha(["impact", "arial"], 25, length=4, rotate=(-30,30),
+                                filename_out="micaptcha_test.jpg", background=(100, 100, 100));
+                
+                timeEach = timer()-t1;
+                timeCount += timeEach;
+                
+            print("%f seconds transcurred for earch, total time: %.03fs" % (timeCount/50, timeCount));        
+
+    print("finish, Goodbye :)");
