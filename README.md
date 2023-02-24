@@ -56,6 +56,16 @@ CreateImageCaptcha(..) return text content on captcha and filename of captcha.
 ![image](https://user-images.githubusercontent.com/95723749/213717521-208183cc-4fa0-4cec-ac66-a626d7846fe6.png)
 
 
+
+## Tested:
+---------------
+Used: Intel Celeron N4000 1.10GHZx2, windows 11 x64, SSD Disk
+```
+A test (Generated 100 .jpg random captchas):
+Result:  0.019798 seconds transcurred for earch captcha, total time: 0.99 seconds
+```
+
+
 ## Last Changes:
 ---------------
 
